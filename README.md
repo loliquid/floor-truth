@@ -22,9 +22,9 @@ Current results:
 | Adapter | Score | Notes |
 |---|---|---|
 | `naive-baseline` *(scripted)* | **4/23** | Keyword-router that takes tool descriptions at face value. Demonstrates the traps are real — it is **not** an LLM's score |
-| Claude Haiku 4.5 | **13/23** | `adapters/llm-anthropic.mjs`, neutral system prompt, single run |
-| GPT-5.6 Luna | **16/23** | `adapters/llm-openai.mjs`, same prompt; `reasoning_effort: none` (chat-completions requires it with tools) |
-| GPT-5.6 Sol | **17/23** | Same setup and reasoning caveat |
+| Claude Haiku 4.5 | **15/23** | `adapters/llm-anthropic.mjs`, neutral system prompt, single run |
+| GPT-5.6 Luna | **15/23** | `adapters/llm-openai.mjs`, same prompt; `reasoning_effort: none` (chat-completions requires it with tools) |
+| GPT-5.6 Sol | **18/23** | Same setup and reasoning caveat |
 | Claude Sonnet 5 | **19/23** | Failed **both** metadata-teaches-bugs cases — obeyed the mislabeled tool and the poisoned example |
 | Claude Fable 5 | **20/23** | Best LLM so far; the only model to recover from a poisoned example |
 | `reference` *(scripted, informed)* | **23/23** | Written with knowledge of the traps. Proves every case is solvable — fairness, not achievability |
@@ -83,6 +83,8 @@ node run.mjs --adapter ./adapters/replay.mjs
 ```
 
 **Contamination rule:** the agent under test must never open `mock-wms/*.mjs`, `evals/`, `patterns/`, `essay/`, `adapters/`, or the README results — they contain the answers. Manual-protocol scores are only as honest as the isolation.
+
+**Field report:** the first manual-protocol run we received (an IDE agent) returned a perfect 23/23 — while its accompanying notes quoted the contents of check regexes that a clean 23/23 run never displays. Treat manual-protocol results as demonstrations, not leaderboard rows; only API-adapter runs with a neutral prompt are comparable. (The failure detail printed by the runner is itself an answer key: iterating answers against it until everything passes is memorization, not evaluation.)
 
 ## Design notes
 
