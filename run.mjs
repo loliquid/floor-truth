@@ -25,6 +25,7 @@ const flag = (name) => {
 const adapterPath = flag("--adapter") || join(HERE, "adapters", "naive-baseline.mjs");
 const onlyCase = flag("--case");
 const strict = args.includes("--strict");
+const verbose = args.includes("--verbose");
 
 const cases = readFileSync(join(HERE, "evals", "cases.jsonl"), "utf8")
   .split("\n").filter(Boolean).map((l) => JSON.parse(l))
@@ -99,7 +100,8 @@ for (const r of results) {
   if (!r.pass) {
     for (const f of r.failures) console.log(`      ✗ ${f}`);
     console.log(`      trap: ${r.trap}`);
-    console.log(`      answer: ${r.answer.slice(0, 160) || "(none)"}`);
+    console.log(`      answer: ${(verbose ? r.answer : r.answer.slice(0, 160)) || "(none)"}`);
+    if (verbose) console.log(`      toolCalls: ${JSON.stringify(r.toolCalls)}`);
   }
 }
 const byFamily = {};

@@ -11,17 +11,22 @@ The premise, in one line: **your agent is only as honest as its tool metadata.**
 ```bash
 node run.mjs                          # naive baseline: watch it fall into the traps
 node run.mjs --adapter ./adapters/reference.mjs   # proof every case is solvable
+ANTHROPIC_API_KEY=sk-... node run.mjs --adapter ./adapters/llm-anthropic.mjs   # a real LLM
 node run.mjs --adapter ./my-agent.mjs # your agent
 ```
 
-No dependencies. Node 18+.
+No dependencies. Node 18+. `--verbose` prints full answers and tool calls; `--case <id>` runs one case.
 
 Current results:
 
-| Adapter | Score | What it proves |
+| Adapter | Score | What it shows |
 |---|---|---|
-| `naive-baseline` | **4/23** | The traps are real: an agent that trusts tool descriptions at face value fails 19 of 23 cases |
-| `reference` | **23/23** | The benchmark is fair: every case has a reachable correct answer using only the exposed tools |
+| `naive-baseline` *(scripted)* | **4/23** | A scripted keyword-router that takes tool descriptions at face value. It demonstrates the traps are real — it is **not** an LLM's score |
+| Claude Haiku 4.5 *(real LLM)* | **13/23** | Via `adapters/llm-anthropic.mjs`, neutral system prompt, single run |
+| Claude Sonnet 5 *(real LLM)* | **19/23** | Same setup. Failed **both** metadata-teaches-bugs cases — the frontier model obeyed the mislabeled tool and the poisoned example |
+| `reference` *(scripted, informed)* | **23/23** | Written with knowledge of the traps. It proves every case is solvable with the exposed tools — fairness, not achievability |
+
+LLM runs are stochastic — expect ±1–2 cases between runs. Scores here are single-run.
 
 ## The failure taxonomy
 
@@ -60,7 +65,7 @@ Case format: one JSON object per line in [`evals/cases.jsonl`](evals/cases.jsonl
 
 ## Design notes
 
-- **The descriptions are the benchmark.** Two tools have deliberately wrong metadata (marked in [`mock-wms/tools.mjs`](mock-wms/tools.mjs) `GROUND_TRUTH`), because that is what production metadata looks like. Do not "fix" them.
+- **The descriptions are the benchmark.** Two tools have deliberately wrong metadata, because that is what production metadata looks like. Do not "fix" them. The full spoiler map lives in [`mock-wms/ground-truth.mjs`](mock-wms/ground-truth.mjs) — isolated from the toolset so the tools can be handed to an agent under test without the answers riding along.
 - **Honesty checks over answer checks.** Several cases score whether the agent tells the truth about its answer's limits (as-of timestamps, unimplemented checks, unresolved names) — the dimension most agent evals skip entirely.
 - **The mirror cases matter.** `vl-03` (a true zero must be reported as zero) and `rt-02` (a genuine forecast question must use the forecast tool) exist so that reflexive hedging and reflexive tool-avoidance don't score points.
 
@@ -70,10 +75,20 @@ Distilled from production lessons building **WOC**, an operational agent over a 
 
 These patterns are not specific to one stack. The date fields, the silent caps, the id–name gap and the metadata that teaches bugs are waiting in every WMS, ERP, and line-of-business system built in the last thirty years.
 
+## Limitations (v0) — what this does and doesn't prove
+
+Honesty about the benchmark itself, in the spirit of the benchmark:
+
+- The **4/23 baseline is scripted**, not an LLM. It demonstrates the traps exist; the real-LLM rows above are the meaningful model scores.
+- The **reference 23/23 proves solvability, not achievability** — it was written knowing the traps.
+- **Grading is regex-based**: transparent and deterministic, but gameable by an adapter that knows the checks. Don't tune your agent on the check strings; that's memorizing the answer key.
+- **Single-run scores over a stochastic model** — treat ±1–2 as noise, and family-level patterns (e.g. metadata-teaches-bugs going 0/2) as the signal.
+- **No adversarial paraphrases yet** — a paraphrase set is the top v1 item, so passing means understanding the semantics, not the phrasing.
+
 ## Roadmap
 
-- v0 (this): failure taxonomy + 23 eval cases + zero-dep runner
-- v1 (if there's interest): larger case set, LLM-adapter examples, Inspect AI export, multi-turn scenarios
+- v0 (this): failure taxonomy + 23 eval cases + zero-dep runner + real-LLM adapter and first model scores
+- v1 (if there's interest): adversarial paraphrase variants, more model adapters (OpenAI/Gemini), stronger grading (LLM-judge option), larger case set, Inspect AI export, multi-turn scenarios
 
 Contributions welcome — especially failure patterns from *your* production floor. Open an issue with the anonymized incident; if it generalizes, it becomes a family or a case.
 
