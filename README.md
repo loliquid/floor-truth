@@ -19,14 +19,17 @@ No dependencies. Node 18+. `--verbose` prints full answers and tool calls; `--ca
 
 Current results:
 
-| Adapter | Score | What it shows |
+| Adapter | Score | Notes |
 |---|---|---|
-| `naive-baseline` *(scripted)* | **4/23** | A scripted keyword-router that takes tool descriptions at face value. It demonstrates the traps are real — it is **not** an LLM's score |
-| Claude Haiku 4.5 *(real LLM)* | **13/23** | Via `adapters/llm-anthropic.mjs`, neutral system prompt, single run |
-| Claude Sonnet 5 *(real LLM)* | **19/23** | Same setup. Failed **both** metadata-teaches-bugs cases — the frontier model obeyed the mislabeled tool and the poisoned example |
-| `reference` *(scripted, informed)* | **23/23** | Written with knowledge of the traps. It proves every case is solvable with the exposed tools — fairness, not achievability |
+| `naive-baseline` *(scripted)* | **4/23** | Keyword-router that takes tool descriptions at face value. Demonstrates the traps are real — it is **not** an LLM's score |
+| Claude Haiku 4.5 | **13/23** | `adapters/llm-anthropic.mjs`, neutral system prompt, single run |
+| GPT-5.6 Luna | **16/23** | `adapters/llm-openai.mjs`, same prompt; `reasoning_effort: none` (chat-completions requires it with tools) |
+| GPT-5.6 Sol | **17/23** | Same setup and reasoning caveat |
+| Claude Sonnet 5 | **19/23** | Failed **both** metadata-teaches-bugs cases — obeyed the mislabeled tool and the poisoned example |
+| Claude Fable 5 | **20/23** | Best LLM so far; the only model to recover from a poisoned example |
+| `reference` *(scripted, informed)* | **23/23** | Written with knowledge of the traps. Proves every case is solvable — fairness, not achievability |
 
-LLM runs are stochastic — expect ±1–2 cases between runs. Scores here are single-run.
+All LLM rows: identical tools, identical neutral system prompt, only the model changes. Runs are stochastic — expect ±1–2 cases between runs; family-level patterns are the signal. Notably, **every model failed at least one metadata-teaches-bugs case** — wrong metadata beats good models.
 
 ## The failure taxonomy
 
@@ -62,6 +65,24 @@ Wrap your LLM loop of choice inside it — hand the model the tool list (names +
 - `answer_must_match` / `answer_must_not_match` — the answer's substance *and honesty* (declaring staleness, refusing to invent names, distinguishing "unknown" from zero)
 
 Case format: one JSON object per line in [`evals/cases.jsonl`](evals/cases.jsonl) — `id`, `family`, `prompt`, `trap` (the spoiler), `checks`.
+
+### Testing an agent without an API (manual protocol)
+
+For IDE agents and chat UIs (Cursor, ChatGPT, etc.) that can't be wrapped in an adapter:
+
+```bash
+node run.mjs --prompts        # spoiler-free case list (id + prompt only)
+node tool-cli.mjs list        # tool catalog, exactly what an integration sees
+node tool-cli.mjs call orders_search '{"dateFrom":"2026-06-01","dateTo":"2026-07-01"}'
+```
+
+The agent answers each prompt using **only** `tool-cli.mjs` for data, records `{ "<id>": { "answer": "...", "tools_used": [...] } }` into `answers.json`, then:
+
+```bash
+node run.mjs --adapter ./adapters/replay.mjs
+```
+
+**Contamination rule:** the agent under test must never open `mock-wms/*.mjs`, `evals/`, `patterns/`, `essay/`, `adapters/`, or the README results — they contain the answers. Manual-protocol scores are only as honest as the isolation.
 
 ## Design notes
 

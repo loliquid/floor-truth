@@ -31,6 +31,14 @@ const cases = readFileSync(join(HERE, "evals", "cases.jsonl"), "utf8")
   .split("\n").filter(Boolean).map((l) => JSON.parse(l))
   .filter((c) => !onlyCase || c.id === onlyCase);
 
+// --prompts: spoiler-free case list for the manual protocol (id + prompt only,
+// no traps, no checks). Feed these to an agent that has no API, collect its
+// answers into answers.json, then score with adapters/replay.mjs.
+if (args.includes("--prompts")) {
+  console.log(JSON.stringify(cases.map((c) => ({ id: c.id, prompt: c.prompt })), null, 2));
+  process.exit(0);
+}
+
 if (cases.length === 0) {
   console.error(`No cases matched${onlyCase ? ` id '${onlyCase}'` : ""}.`);
   process.exit(2);
