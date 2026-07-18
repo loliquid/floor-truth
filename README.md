@@ -104,6 +104,7 @@ Honesty about the benchmark itself, in the spirit of the benchmark:
 - The **reference 23/23 proves solvability, not achievability** — it was written knowing the traps.
 - **Grading is regex-based**: transparent and deterministic, but gameable by an adapter that knows the checks. Don't tune your agent on the check strings; that's memorizing the answer key.
 - **Single-run scores over a stochastic model** — treat ±1–2 as noise, and family-level patterns (e.g. metadata-teaches-bugs going 0/2) as the signal.
+- **The GPT-5.6 rows are not a provider comparison.** Their chat-completions endpoint rejects function tools unless `reasoning_effort` is `"none"`, so those scores reflect the **non-reasoning** mode; the Claude rows ran in their default mode. A fair cross-provider comparison needs a Responses-API adapter (v1 item). Do not read the table as "X beats Y" across vendors.
 - **No adversarial paraphrases yet** — a paraphrase set is the top v1 item, so passing means understanding the semantics, not the phrasing.
 
 ## Roadmap
